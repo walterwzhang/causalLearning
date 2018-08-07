@@ -68,7 +68,7 @@
 #'  based on deltahat = relative change in rss. rsstesthat is rss over test
 #'  (validation) set achieved by each reduced model in sequence- used later for
 #'  selecting a member of the sequence. active2 contains indices of columns with
-#'  nonzero norm 
+#'  nonzero norm
 #'
 #' @examples
 #'# Randomized experiment example
@@ -129,17 +129,17 @@ causalMARS = function(x, tx, y,
   if(!is.null(x.val)) {
     x.val = scale(x.val, TRUE, FALSE)
   }
-  
+
   # compute quantiles for splitting
   discrete = rep(FALSE, p)
   for (j in 1:p) {
-    if (length(table(x[, j])) == 2) 
+    if (length(table(x[, j])) == 2)
       discrete[j] = TRUE
   }
-  
+
   probs = seq(0, 1, length = nquant)[-nquant]
   quant = apply(x, 2, stats::quantile, probs)
-  
+
   nquantm = rep(nquant, p)
   if (sum(discrete) > 0) {
     for (j in which(discrete)) {
@@ -148,49 +148,49 @@ causalMARS = function(x, tx, y,
       quant[1, j] = 0
     }
   }
-  
+
   if (propensity) {
     stratum.sizes = table(stratum)/nrow(x)
     nstratum = length(stratum.sizes)
-    if (sum(as.numeric(names(stratum.sizes)) != (1:length(stratum.sizes))) != 0) 
+    if (sum(as.numeric(names(stratum.sizes)) != (1:length(stratum.sizes))) != 0)
       stop("Strata should be numbered 1:k")
     stratum.val.sizes = table(stratum.val)/nrow(x.val)
     nstratum.val = length(stratum.val.sizes)
-    if (sum(as.numeric(names(stratum.val.sizes)) != (1:length(stratum.val.sizes))) != 
-      0) 
+    if (sum(as.numeric(names(stratum.val.sizes)) != (1:length(stratum.val.sizes))) !=
+      0)
       stop("Stratatest should be numbered 1:k")
   }
-  
+
   modmatrix = matrix(0, nrow = n, ncol = maxterms)
   active = rep(FALSE, maxterms)
   active[1] = TRUE
   modmatrix[, 1] = 1
-  
+
   r = y - y
   a0 = c(mean(y[tx == 0]), mean(y[tx == 1]))
-  
+
   r[tx == 0] = y[tx == 0] - mean(y[tx == 0])
   r[tx == 1] = y[tx == 1] - mean(y[tx == 1])
-  
+
   parent = childvar = childquant = NULL
   allvars = vector("list", maxterms)
   maxscorall = rep(NA, maxterms)
   nterms = 1
-  
-  
+
+
   # forward stepwise
   while (nterms < maxterms) {
     maxscor = -1 * BIG
     act = active[1:nterms]
     num = unlist(lapply(allvars, length))[1:nterms]
     act = act & (num < degree)
-    
+
     for (ii in (1:nterms)[act]) {
       jlist = rep(TRUE, p)
-      if (ii > 1) 
+      if (ii > 1)
         jlist[allvars[[ii]]] = FALSE
-      
-      
+
+
       for (j in which(jlist)) {
         for (k in 1:(nquantm[j] - 1)) {
           # bx1 = modmatrix[, ii] * truncpow(x[, j], quant[k, j], dir = 1) bx2 =
@@ -198,14 +198,14 @@ causalMARS = function(x, tx, y,
           # correspondng chanegs in propensity section below!
           bx = NULL
           bx1 = modmatrix[, ii] * truncpow(x[, j], quant[k, j], dir = 1)
-          if (sum(bx1^2) > 0) 
+          if (sum(bx1^2) > 0)
           bx = cbind(bx, bx1)
           bx2 = modmatrix[, ii] * truncpow(x[, j], quant[k, j], dir = 2)
-          if (sum(bx2^2) > 0) 
+          if (sum(bx2^2) > 0)
           bx = cbind(bx, bx2)
-          
+
           if (!propensity) {
-          
+
             scor = -0.5 * BIG
             if (!is.null(bx)) {
               res = myridge(bx, r, int = TRUE)$res
@@ -214,36 +214,36 @@ causalMARS = function(x, tx, y,
               scor = sum(res^2) - sum(res0^2) - sum(res1^2)
             }
           }
-          
+
           if (propensity) {
             if (!is.null(bx)) {
               scor = 0
-              
+
               res0 = res1 = rep(0, n)
               for (s in 1:nstratum) {
-                
+
                 res = myridge(bx[stratum == s, ], r[stratum == s])$res
-                
+
                 if (sum(tx == 0 & stratum == s) >= minnum) {
-                res0[stratum == s & tx == 0] = myridge(bx[tx == 0 & stratum == 
+                res0[stratum == s & tx == 0] = myridge(bx[tx == 0 & stratum ==
                   s, ], r[tx == 0 & stratum == s])$res
                 }
                 if (sum(tx == 1 & stratum == s) >= minnum) {
-                res1[stratum == s & tx == 1] = myridge(bx[tx == 1 & stratum == 
+                res1[stratum == s & tx == 1] = myridge(bx[tx == 1 & stratum ==
                   s, ], r[tx == 1 & stratum == s])$res
                 }
                 scor = scor + (sum(res^2) - sum(res0^2) - sum(res1^2))
-                
+
               }
               res0 = res0[tx == 0]
               res1 = res1[tx == 1]
             }
           }  # end of propensity loop
-          
-          
+
+
           if (scor > maxscor) {
           maxscor = scor
-          
+
           iihat = ii
           jhat = j
           khat = k
@@ -257,46 +257,46 @@ causalMARS = function(x, tx, y,
     maxscorall[ii] = maxscor
     new1 = modmatrix[, iihat] * truncpow(x[, jhat], quant[khat, jhat], dir = 1)
     new2 = modmatrix[, iihat] * truncpow(x[, jhat], quant[khat, jhat], dir = 2)
-    if (!is.matrix(new1)) 
+    if (!is.matrix(new1))
       new1 = matrix(new1, ncol = 1)
-    if (!is.matrix(new2)) 
+    if (!is.matrix(new2))
       new2 = matrix(new2, ncol = 1)
-    
-    
+
+
     modmatrix[, nterms + 1] = new1
     modmatrix[, nterms + 2] = new2
-    
-    
+
+
     active[nterms + 1] = TRUE
     active[nterms + 2] = TRUE
-    
-    
+
+
     allvars[[nterms + 1]] = allvars[[nterms + 2]] = c(allvars[[iihat]], jhat)
     nterms = nterms + 2
-    
-    
+
+
     r[tx == 0] = r[tx == 0] * (1 - eps) + eps * res0hat
     r[tx == 1] = r[tx == 1] * (1 - eps) + eps * res1hat
-    
+
     parent = c(parent, iihat)
     childvar = c(childvar, jhat)
-    
+
     childquant = c(childquant, khat)
   }  #end of while loop
-  
-  
+
+
   active = colSums(modmatrix^2) > 0
   deltahat = khat = NA
-  out = list(parent = parent, childvar = childvar, childquant = childquant, quant = quant, 
+  out = list(parent = parent, childvar = childvar, childquant = childquant, quant = quant,
     active = active, eps = eps, allvars = allvars)
-  
+
   tim1 = proc.time()
   # cat('forward done', fill = TRUE)
-  
-  
+
+
   # backward deletion
   rsstesthat = setesthat = NULL
-  
+
   if (backstep) {
 
     if(is.null(x.val) | is.null(tx.val) | is.null(y.val)) {
@@ -307,69 +307,69 @@ causalMARS = function(x, tx, y,
     modmatrix = makebx.newmars(out, x, remove.zerocols = FALSE)[, -1]
     modmatrix.val = makebx.newmars(out, x.val, remove.zerocols = FALSE)[, -1]
     ss = colSums(modmatrix^2) > 0
-    
+
     active2 = rep(TRUE, ncol(modmatrix.val))
     active2[!ss] = FALSE
     khat = deltahat = deltatesthat = rsstesthat = setesthat = rep(NA, sum(active2))
     rtest = rep(NA, nrow(x.val))
-    
+
     go = sum(active2) > 0
-    
+
     ii = 0
     while (go) {
       go = FALSE
-      
+
       delta = deltatest = rsstest = rep(BIG, length(active2))
       # train
       if (!propensity) {
-        fit0 = myridge(modmatrix[, active2, drop = FALSE][tx == 0, ], y[tx == 
+        fit0 = myridge(modmatrix[, active2, drop = FALSE][tx == 0, ], y[tx ==
           0], int = TRUE)
-        fit1 = myridge(modmatrix[, active2, drop = FALSE][tx == 1, ], y[tx == 
+        fit1 = myridge(modmatrix[, active2, drop = FALSE][tx == 1, ], y[tx ==
           1], int = TRUE)
         res0 = fit0$res
         res1 = fit1$res
-        
+
         # test
-        yhat0 = cbind(1, modmatrix.val[, active2, drop = FALSE][tx.val == 0, 
+        yhat0 = cbind(1, modmatrix.val[, active2, drop = FALSE][tx.val == 0,
           , drop = FALSE]) %*% fit0$coef
-        yhat1 = cbind(1, modmatrix.val[, active2, drop = FALSE][tx.val == 1, 
+        yhat1 = cbind(1, modmatrix.val[, active2, drop = FALSE][tx.val == 1,
           , drop = FALSE]) %*% fit1$coef
         res0test = (y.val[tx.val == 0] - yhat0)
         res1test = (y.val[tx.val == 1] - yhat1)
         rss0testsq = sum(res0test^2)
         rss1testsq = sum(res1test^2)
       }
-      
-      if (propensity) 
+
+      if (propensity)
         {
           rss0sq = rss1sq = rss0testsq = rss1testsq = 0
           # initial fit with parallel terms training
           for (s in 1:nstratum) {
             res0 = res1 = 0
             if (sum(tx == 0 & stratum == s) >= minnum) {
-              fit0 = myridge(modmatrix[, active2, drop = FALSE][tx == 0 & stratum == 
+              fit0 = myridge(modmatrix[, active2, drop = FALSE][tx == 0 & stratum ==
               s, ], y[tx == 0 & stratum == s], int = TRUE)
               res0 = fit0$res
             }
             if (sum(tx == 1 & stratum == s) >= minnum) {
-              fit1 = myridge(modmatrix[, active2, drop = FALSE][tx == 1 & stratum == 
+              fit1 = myridge(modmatrix[, active2, drop = FALSE][tx == 1 & stratum ==
               s, ], y[tx == 1 & stratum == s], int = TRUE)
               res1 = fit1$res
             }
             rss0sq = rss0sq + sum(res0^2)
             rss1sq = rss1sq + sum(res1^2)
-            
-            
+
+
             # test
-            
+
             res0test = res1test = 0
             if (sum(tx.val == 0 & stratum.val == s) >= minnum) {
-              yhat0 = cbind(1, modmatrix.val[, active2, drop = FALSE][tx.val == 
+              yhat0 = cbind(1, modmatrix.val[, active2, drop = FALSE][tx.val ==
               0 & stratum.val == s, ]) %*% fit0$coef
               res0test = (y.val[tx.val == 0 & stratum.val == s] - yhat0)
             }
             if (sum(tx.val == 1 & stratum.val == s) >= minnum) {
-              yhat1 = cbind(1, modmatrix.val[, active2, drop = FALSE][tx.val == 
+              yhat1 = cbind(1, modmatrix.val[, active2, drop = FALSE][tx.val ==
               1 & stratum.val == s, ]) %*% fit1$coef
               res1test = (y.val[tx.val == 1 & stratum.val == s] - yhat1)
             }
@@ -377,40 +377,40 @@ causalMARS = function(x, tx, y,
             rss1testsq = rss1testsq + sum(res1test^2)
           }
         }  #end of propensity
-      
-      
+
+
       for (k in which(active2)) {
         # try collapsing a training set term
         act = active2
         act[k] = FALSE
-        
+
         if (!propensity) {
-          
+
           redfit = myridge(modmatrix[, k, drop = FALSE], y, int = TRUE)
           r = redfit$res
-          fit00 = myridge(modmatrix[, act, drop = FALSE][tx == 0, ], r[tx == 
+          fit00 = myridge(modmatrix[, act, drop = FALSE][tx == 0, ], r[tx ==
           0], int = TRUE)
-          fit11 = myridge(modmatrix[, act, drop = FALSE][tx == 1, ], r[tx == 
+          fit11 = myridge(modmatrix[, act, drop = FALSE][tx == 1, ], r[tx ==
           1], int = TRUE)
-          
+
           res00 = fit00$res
           res11 = fit11$res
-          delta[k] = (sum(res00^2) + sum(res11^2) - sum(res0^2) - sum(res1^2))/(sum(res00^2) + 
+          delta[k] = (sum(res00^2) + sum(res11^2) - sum(res0^2) - sum(res1^2))/(sum(res00^2) +
           sum(res11^2))
           # try collapsing the same test set term
           rtest = y.val - cbind(1, modmatrix.val[, k, drop = FALSE]) %*% redfit$coef
-          yhat00 = cbind(1, modmatrix.val[, act, drop = FALSE][tx.val == 0, 
+          yhat00 = cbind(1, modmatrix.val[, act, drop = FALSE][tx.val == 0,
           ]) %*% fit00$coef
-          yhat11 = cbind(1, modmatrix.val[, act, drop = FALSE][tx.val == 1, 
+          yhat11 = cbind(1, modmatrix.val[, act, drop = FALSE][tx.val == 1,
           ]) %*% fit11$coef
-          
+
           res00test = (rtest[tx.val == 0] - yhat00)
           res11test = (rtest[tx.val == 1] - yhat11)
           rss00testsq = sum(res00test^2)
           rss11testsq = sum(res11test^2)
         }
-        
-        if (propensity) 
+
+        if (propensity)
           {
           rss00sq = rss11sq = rss00testsq = rss11testsq = 0
           for (s in 1:nstratum) {
@@ -418,48 +418,48 @@ causalMARS = function(x, tx, y,
             r = redfit$res
             res00 = res11 = res00test = res11test = 0
             if (sum(tx == 0 & stratum == s) >= minnum) {
-            fit00 = myridge(modmatrix[, act, drop = FALSE][tx == 0 & stratum == 
+            fit00 = myridge(modmatrix[, act, drop = FALSE][tx == 0 & stratum ==
               s, ], r[tx == 0 & stratum == s], int = TRUE)
             res00 = fit00$res
             }
             if (sum(tx == 1 & stratum == s) >= minnum) {
-            fit11 = myridge(modmatrix[, act, drop = FALSE][tx == 1 & stratum == 
+            fit11 = myridge(modmatrix[, act, drop = FALSE][tx == 1 & stratum ==
               s, ], r[tx == 1 & stratum == s], int = TRUE)
             res11 = fit11$res
             }
-            
+
             rss00sq = rss00sq + sum(res00^2)
             rss11sq = rss11sq + sum(res11^2)
-            
+
             # try deleting the same test set term
-            
-            
+
+
             if (sum(tx.val == 0 & stratum.val == s) >= minnum) {
-            
-            yhat00 = cbind(1, modmatrix.val[, act, drop = FALSE][tx.val == 
+
+            yhat00 = cbind(1, modmatrix.val[, act, drop = FALSE][tx.val ==
               0 & stratum.val == s, ]) %*% fit00$coef
             res00test = (y.val[tx.val == 0 & stratum.val == s] - yhat00)
             }
             if (sum(tx.val == 1 & stratum.val == s) >= minnum) {
-            yhat11 = cbind(1, modmatrix.val[, act, drop = FALSE][tx.val == 
+            yhat11 = cbind(1, modmatrix.val[, act, drop = FALSE][tx.val ==
               1 & stratum.val == s, ]) %*% fit11$coef
             res11test = (y.val[tx.val == 1 & stratum.val == s] - yhat11)
             }
-            
+
             rss00testsq = rss00testsq + sum(res00test^2)
             rss11testsq = rss11testsq + sum(res11test^2)
 
           }
           delta[k] = (rss00sq + rss11sq - rss0sq - rss1sq)/(rss00sq + rss11sq)
           }  #end of propensity
-        
+
         # deltatest[k] = (sum(res00test^2) + sum(res11test^2) - sum(res0test^2)
         # -sum(res1test^2))/(sum(res00test^2) + sum(res11test^2))
-        
-        deltatest[k] = (rss00testsq + rss11testsq - rss0testsq - rss1testsq)/(rss00testsq + 
+
+        deltatest[k] = (rss00testsq + rss11testsq - rss0testsq - rss1testsq)/(rss00testsq +
           rss11testsq)
       }  #end of propensity
-      
+
       ii = ii + 1
       # cat(c('ii=', ii), fill = TRUE)
       khat[ii] = which.min(delta)
@@ -473,14 +473,14 @@ causalMARS = function(x, tx, y,
       setesthat[ii] = NA
       # setesthat[ii]=sqrt((n1*var(res0test^2)+n2*var(res1test^2))/(n1+n2)^2) # not
       # currently computed
-      
+
       active2[khat] = FALSE
       num.colsleft = sum(colSums(modmatrix.val[, active2, drop = FALSE]^2) > 0)
       go = (sum(active2) > 0) & (num.colsleft > 0)
       # cat(c(sum(active2), num.colsleft),fill=TRUE) browser() cat(c('dropping ', khat),
       # fill = TRUE)
     }
-    
+
   }
   out$khat = khat[!is.na(khat)]
   out$deltahat = deltahat[!is.na(deltahat)]

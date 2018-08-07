@@ -45,6 +45,7 @@
 #'abline(0, 1, lty = 2)
 #'
 #' @export
+#' @importFrom parallel mclapply
 
 bagged.causalMARS = function(x, tx, y, nbag = 20, maxterms = 11, nquant = 5,
   degree = ncol(x), eps = 1, backstep = FALSE,
