@@ -99,7 +99,7 @@ bagged.causalMARS = function(x, tx, y, nbag = 20, maxterms = 11, nquant = 5,
   } else
   {
     # Multi-thread case
-    fit <- mclapply(1:nbag, function(b)
+    fit <- parallel::mclapply(1:nbag, function(b)
     {
       if (verbose) cat(c('BAG=', b, '/', nbag), fill = TRUE)
 
