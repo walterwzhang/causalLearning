@@ -6,7 +6,8 @@
 \usage{
 bagged.causalMARS(x, tx, y, nbag = 20, maxterms = 11, nquant = 5,
   degree = ncol(x), eps = 1, backstep = FALSE, propensity = FALSE,
-  stratum = rep(1, nrow(x)), minnum = 5, verbose = FALSE)
+  stratum = rep(1, nrow(x)), minnum = 5, verbose = FALSE,
+  nthreads = NULL)
 }
 \arguments{
 \item{x}{matrix of covariates}
@@ -39,6 +40,8 @@ score stratum needed to estimate regression coefficients for basis
 (only used if \code{propensity = TRUE})}
 
 \item{verbose}{logical: should progress be printed to console?}
+
+\item{ncores}{integer: Number of threads to use (defaults to 1)}
 }
 \value{
 an object of class \code{bagged.causalMARS}, which is itself a list
@@ -60,7 +63,7 @@ tx = rbinom(n, size = 1, p = 0.5) # random treatment assignment
 y = rowMeans(x) + tx * tx_effect + rnorm(n, sd = 0.001) # simulate response
 
 # Estimate bagged causal MARS model
-fit_bcm = causalLearning::bagged.causalMARS(x, tx, y, nbag = 10)
+fit_bcm = bagged.causalMARS(x, tx, y, nbag = 10)
 pred_bcm = predict(fit_bcm, newx = x)
 
 # Visualize results

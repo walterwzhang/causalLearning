@@ -18,6 +18,7 @@
 #'  score stratum needed to estimate regression coefficients for basis
 #'  (only used if \code{propensity = TRUE})
 #' @param verbose logical: should progress be printed to console?
+#' @param ncores integer: Number of threads to use (defaults to 1)
 #'
 #' @return an object of class \code{bagged.causalMARS}, which is itself a list
 #'  of \code{causalMARS} objects
@@ -47,9 +48,10 @@
 
 bagged.causalMARS = function(x, tx, y, nbag = 20, maxterms = 11, nquant = 5,
   degree = ncol(x), eps = 1, backstep = FALSE,
-  propensity = FALSE, stratum = rep(1, nrow(x)), minnum = 5, verbose = FALSE) {
+  propensity = FALSE, stratum = rep(1, nrow(x)), minnum = 5, verbose = FALSE,
+  nthreads = NULL) {
 
- 
+
   # Input sanitization
 
   x = as.matrix(x)
@@ -71,25 +73,45 @@ bagged.causalMARS = function(x, tx, y, nbag = 20, maxterms = 11, nquant = 5,
 
   }
 
- 
+
   x = scale(x, center = TRUE, scale = FALSE)
 
-  fit = list()
 
-  for (b in 1:nbag) {
 
-    if (verbose) cat(c('BAG=', b, '/', nbag), fill = TRUE)
+  if (is.null(nthreads))
+  {
+    # One thread case
+    fit <- list()
+    for (b in 1:nbag)
+    {
+      if (verbose) cat(c('BAG=', b, '/', nbag), fill = TRUE)
 
-    bag = sample(1:nrow(x), size = nrow(x), replace = TRUE)
-    oob = rep(TRUE, nrow(x))
-    oob[bag] = FALSE
-    fit[[b]] = causalMARS(x = x[bag, ], tx = tx[bag], y = y[bag],
-      maxterms = maxterms, nquant = nquant, degree = degree, eps = eps,
-      backstep = backstep, x.val = x[oob, ], tx.val = tx[oob], y.val = y[oob],
-      propensity = propensity, stratum = stratum[bag],
-      stratum.val = stratum[oob], minnum = minnum)
+      bag = sample(1:nrow(x), size = nrow(x), replace = TRUE)
+      oob = rep(TRUE, nrow(x))
+      oob[bag] = FALSE
+      fit[[b]] = causalMARS(x = x[bag, ], tx = tx[bag], y = y[bag],
+        maxterms = maxterms, nquant = nquant, degree = degree, eps = eps,
+        backstep = backstep, x.val = x[oob, ], tx.val = tx[oob], y.val = y[oob],
+        propensity = propensity, stratum = stratum[bag],
+        stratum.val = stratum[oob], minnum = minnum)
+    }
+  } else
+  {
+    # Multi-thread case
+    fit <- mclapply(1:nbag, function(b)
+    {
+      if (verbose) cat(c('BAG=', b, '/', nbag), fill = TRUE)
+
+      bag = sample(1:nrow(x), size = nrow(x), replace = TRUE)
+      oob = rep(TRUE, nrow(x))
+      oob[bag] = FALSE
+      causalMARS(x = x[bag, ], tx = tx[bag], y = y[bag],
+        maxterms = maxterms, nquant = nquant, degree = degree, eps = eps,
+        backstep = backstep, x.val = x[oob, ], tx.val = tx[oob], y.val = y[oob],
+        propensity = propensity, stratum = stratum[bag],
+        stratum.val = stratum[oob], minnum = minnum)
+    }, mc.cores = nthreads, mc.set.seed = TRUE)
   }
-  class(fit) = 'bagged.causalMARS'
-  fit
+    class(fit) = 'bagged.causalMARS'
+    return(fit)
 }
-

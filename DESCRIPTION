@@ -11,7 +11,10 @@ Description: The main functions are cv.causalBoosting and bagged.causalMARS,
   which build upon the simpler causalBoosting and causalMARS functions. All of
   these functions have their own predict methods.
 Depends: R (>= 3.3.0)
-Imports: ranger
+Imports:
+    ranger,
+    parallel
 License: GPL-2
 LazyData: true
 RoxygenNote: 6.0.1
+URL: https://github.com/walterwzhang/causalLearning
