@@ -13,3 +13,8 @@ The package is currently in beta, not yet ready for public consumption.
 install.packages("devtools")
 devtools::install_github('walterwzhang/causalLearning')
 ```
+
+Changes in the fork:
+
+- Added multithreading to the `bagged.causalMARS` function with `mclapply`
+- Changed the `solve` function's tolerance in the `myridge` function
